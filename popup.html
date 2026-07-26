@@ -5,146 +5,193 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VIT-Connect</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --bg: #0e0f14;
-      --surface: #1a1c26;
-      --border: #2a2d3e;
-      --accent: #5ef0b0;
-      --accent2: #3b82f6;
-      --text: #e8eaf0;
-      --muted: #6b7096;
-      --danger: #f05e5e;
+      --bg: #090d16;
+      --surface: #121826;
+      --surface-hover: #1a2235;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.5);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.25);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --text: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --danger: #ef4444;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
     }
 
     body {
-      width: 300px;
-      background: var(--bg);
+      width: 320px;
+      background-color: var(--bg);
       color: var(--text);
-      font-family: 'Syne', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 0;
-      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding: 16px;
     }
 
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Header */
     .header {
-      background: linear-gradient(135deg, #1a1c26 0%, #111320 100%);
-      padding: 18px 20px 14px;
+      padding: 16px 18px 14px;
       border-bottom: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -30px; right: -30px;
-      width: 100px; height: 100px;
-      background: radial-gradient(circle, rgba(94,240,176,0.12) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .header-top {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 4px;
-    }
-
-    .wifi-icon {
-      width: 32px; height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .wifi-icon svg { width: 18px; height: 18px; }
-
-    .title {
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      color: var(--text);
-    }
-
-    .subtitle {
-      font-size: 10px;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      letter-spacing: 0.5px;
-    }
-
-    .toggle-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
     }
 
-    .toggle-label {
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+
+    .brand-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.2px;
+      color: var(--text);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       font-size: 11px;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-weight: 500;
+      color: var(--text-secondary);
     }
 
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .status-badge.active .status-dot {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    /* Modern Switch Toggle */
     .toggle {
       position: relative;
-      width: 38px; height: 20px;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
     }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0;
-      background: var(--border);
-      border-radius: 20px;
-      cursor: pointer;
-      transition: background 0.2s;
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
-    .slider::before {
-      content: '';
+
+    .toggle-slider {
       position: absolute;
-      width: 14px; height: 14px;
-      left: 3px; top: 3px;
-      background: var(--muted);
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      transition: background-color 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #ffffff;
       border-radius: 50%;
-      transition: transform 0.2s, background 0.2s;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
-    input:checked + .slider { background: rgba(94,240,176,0.25); }
-    input:checked + .slider::before {
+
+    input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .toggle-slider::before {
       transform: translateX(18px);
-      background: var(--accent);
     }
 
-    .body {
-      padding: 16px 20px;
+    /* Content Body */
+    .content {
+      padding: 16px 18px;
     }
 
-    .field {
+    /* Form Elements */
+    .form-group {
       margin-bottom: 14px;
     }
 
     label {
       display: block;
-      font-size: 10px;
-      font-family: 'Space Mono', monospace;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
       margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-wrapper {
+      position: relative;
     }
 
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      background: var(--surface);
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
       font-size: 13px;
       padding: 9px 12px;
       outline: none;
@@ -153,63 +200,83 @@
 
     input[type="text"]:focus,
     input[type="password"]:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(94,240,176,0.1);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
     }
 
-    .pass-wrap {
-      position: relative;
+    .pass-input {
+      padding-right: 36px !important;
     }
 
-    .pass-wrap input { padding-right: 38px; }
-
-    .show-pass {
+    .toggle-pass-btn {
       position: absolute;
-      right: 10px; top: 50%;
+      right: 10px;
+      top: 50%;
       transform: translateY(-50%);
-      background: none; border: none;
+      background: none;
+      border: none;
       cursor: pointer;
-      color: var(--muted);
+      color: var(--text-muted);
       padding: 4px;
+      display: flex;
+      align-items: center;
+      border-radius: var(--radius-sm);
       transition: color 0.15s;
-      display: flex; align-items: center;
     }
 
-    .show-pass:hover { color: var(--accent); }
-    .show-pass svg { width: 15px; height: 15px; }
+    .toggle-pass-btn:hover {
+      color: var(--text);
+    }
 
-    .save-btn {
+    .toggle-pass-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Primary & Secondary Buttons */
+    .btn-primary {
       width: 100%;
-      background: var(--accent);
-      color: #0a1a12;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      color: #ffffff;
       border: none;
-      border-radius: 8px;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
+      border-radius: var(--radius-md);
       font-size: 13px;
+      font-weight: 600;
       padding: 10px;
       cursor: pointer;
-      letter-spacing: 0.3px;
+      box-shadow: 0 4px 12px var(--primary-glow);
       transition: opacity 0.15s, transform 0.1s;
       margin-top: 4px;
     }
 
-    .save-btn:hover { opacity: 0.9; }
-    .save-btn:active { transform: scale(0.98); }
-
-    .status {
-      margin-top: 10px;
-      font-size: 11px;
-      font-family: 'Space Mono', monospace;
-      text-align: center;
-      height: 16px;
-      transition: color 0.3s;
+    .btn-primary:hover {
+      opacity: 0.95;
     }
 
-    .status.ok { color: var(--accent); }
-    .status.err { color: var(--danger); }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
 
-    /* Saved/locked state */
+    .btn-secondary {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--surface-hover);
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Saved State View */
     .saved-state {
       display: none;
     }
@@ -222,156 +289,206 @@
       display: none;
     }
 
-    .credential-row {
+    .credential-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .credential-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 9px 12px;
-      margin-bottom: 10px;
+    }
+
+    .credential-item + .credential-item {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .credential-info {
+      display: flex;
+      flex-direction: column;
     }
 
     .credential-label {
       font-size: 10px;
-      font-family: 'Space Mono', monospace;
-      color: var(--muted);
+      font-weight: 600;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 3px;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
     }
 
     .credential-value {
       font-size: 13px;
-      font-family: 'Space Mono', monospace;
+      font-weight: 500;
       color: var(--text);
-      letter-spacing: 2px;
     }
 
-    .lock-icon {
-      color: var(--accent);
-      opacity: 0.6;
-      flex-shrink: 0;
+    .lock-badge {
+      color: var(--success);
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
     }
 
-    .edit-btn {
-      width: 100%;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      padding: 8px;
-      cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 4px;
-      transition: border-color 0.2s, color 0.2s;
+    .status-msg {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      min-height: 18px;
+      transition: opacity 0.2s;
     }
 
-    .edit-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+    .status-msg.ok {
+      color: var(--success);
     }
 
+    .status-msg.err {
+      color: var(--danger);
+    }
+
+    /* Action Buttons Container */
+    .action-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .action-group .btn-secondary {
+      flex: 1;
+    }
+
+    /* Footer */
     .footer {
-      padding: 10px 20px 14px;
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.15);
       border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .tip {
-      font-size: 10px;
-      font-family: 'Space Mono', monospace;
-      color: var(--muted);
-      line-height: 1.5;
+    .footer svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      color: var(--primary);
     }
-
-    .tip strong { color: rgba(94,240,176,0.7); font-weight: 400; }
-
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-top">
-      <div class="wifi-icon">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.5 8.5C5.5 4.5 10.5 2.5 12 2.5s6.5 2 10.5 6" stroke="#0a1a12" stroke-width="2" stroke-linecap="round"/>
-          <path d="M5 12c1.9-1.9 4.3-3 7-3s5.1 1.1 7 3" stroke="#0a1a12" stroke-width="2" stroke-linecap="round"/>
-          <path d="M8.5 15.5c.9-.9 2.2-1.5 3.5-1.5s2.6.6 3.5 1.5" stroke="#0a1a12" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="12" cy="19" r="1.5" fill="#0a1a12"/>
-        </svg>
+
+  <div class="app-card">
+    
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <line x1="12" y1="20" x2="12.01" y2="20" stroke-width="3"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-title">VIT-Connect</span>
+          <span class="status-badge active" id="statusBadge">
+            <span class="status-dot"></span>
+            <span id="statusBadgeText">Auto-login On</span>
+          </span>
+        </div>
       </div>
-      <div>
-        <div class="title">VIT-Connect</div>
-        <div class="subtitle">Hostel captive portal</div>
-      </div>
-    </div>
-    <div class="toggle-row">
-      <span class="toggle-label">Auto-login</span>
-      <label class="toggle">
+
+      <label class="toggle" title="Enable or disable auto-login">
         <input type="checkbox" id="enabledToggle" checked />
-        <span class="slider"></span>
+        <span class="toggle-slider"></span>
       </label>
     </div>
-  </div>
 
-  <div class="body">
+    <!-- Main Content -->
+    <div class="content">
 
-    <!-- Saved/locked view -->
-    <div class="saved-state" id="savedState">
-      <div class="credential-row">
-        <div>
-          <div class="credential-label">Username</div>
-          <div class="credential-value" id="savedUsername">—</div>
+      <!-- Saved View -->
+      <div class="saved-state" id="savedState">
+        <div class="credential-card">
+          <div class="credential-item">
+            <div class="credential-info">
+              <span class="credential-label">Username / Reg No</span>
+              <span class="credential-value" id="savedUsername">—</span>
+            </div>
+            <div class="lock-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+          </div>
+          <div class="credential-item">
+            <div class="credential-info">
+              <span class="credential-label">Password</span>
+              <span class="credential-value">••••••••••••</span>
+            </div>
+            <div class="lock-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+          </div>
         </div>
-        <svg class="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-      <div class="credential-row">
-        <div>
-          <div class="credential-label">Password</div>
-          <div class="credential-value">••••••••••</div>
-        </div>
-        <svg class="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
-      </div>
-      <button class="edit-btn" id="editBtn">✎ Edit credentials</button>
-    </div>
 
-    <!-- Edit form -->
-    <div class="edit-form" id="editForm">
-      <div class="field">
-        <label for="username">Username / Email</label>
-        <input type="text" id="username" placeholder="your-username" autocomplete="off" spellcheck="false" />
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <div class="pass-wrap">
-          <input type="password" id="password" placeholder="••••••••" autocomplete="off" />
-          <button class="show-pass" id="togglePass" title="Show/hide password">
-            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </button>
+        <div class="action-group">
+          <button class="btn-secondary" id="editBtn">Edit Credentials</button>
+          <button class="btn-secondary" id="testBtn">Test Login</button>
         </div>
       </div>
-      <button class="save-btn" id="saveBtn">Save Credentials</button>
-      <div class="status" id="status"></div>
+
+      <!-- Edit Credentials Form -->
+      <div class="edit-form" id="editForm">
+        <div class="form-group">
+          <label for="username">Username / Registration No.</label>
+          <input type="text" id="username" placeholder="e.g. 21BCE0001" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="form-group">
+          <label for="password">WiFi Password</label>
+          <div class="input-wrapper">
+            <input type="password" class="pass-input" id="password" placeholder="••••••••" autocomplete="off" />
+            <button class="toggle-pass-btn" id="togglePass" type="button" title="Show or hide password">
+              <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="saveBtn">Save Credentials</button>
+      </div>
+
+      <div class="status-msg" id="status"></div>
+
     </div>
 
-  </div>
-
-  <div class="footer">
-    <div class="tip">
-      <strong>→</strong> Extension auto-detects captive portals and fills your login. Works on page load and after redirects.
+    <!-- Footer -->
+    <div class="footer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <span>Auto-logs into ProntoNetworks captive portal when connected to hostel WiFi.</span>
     </div>
+
   </div>
 
   <script src="popup.js"></script>

@@ -1,19 +1,31 @@
-// Popup logic - manages credentials and UI
+// VIT-Connect Popup Logic - Manages credentials and UI state
 
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const saveBtn       = document.getElementById('saveBtn');
-const status        = document.getElementById('status');
-const togglePass    = document.getElementById('togglePass');
-const eyeIcon       = document.getElementById('eyeIcon');
-const enabledToggle = document.getElementById('enabledToggle');
-const editBtn       = document.getElementById('editBtn');
-const savedState    = document.getElementById('savedState');
-const editForm      = document.getElementById('editForm');
-const savedUsername = document.getElementById('savedUsername');
+const usernameInput   = document.getElementById('username');
+const passwordInput   = document.getElementById('password');
+const saveBtn         = document.getElementById('saveBtn');
+const statusMsg       = document.getElementById('status');
+const togglePass      = document.getElementById('togglePass');
+const eyeIcon         = document.getElementById('eyeIcon');
+const enabledToggle   = document.getElementById('enabledToggle');
+const statusBadge     = document.getElementById('statusBadge');
+const statusBadgeText = document.getElementById('statusBadgeText');
+const editBtn         = document.getElementById('editBtn');
+const testBtn         = document.getElementById('testBtn');
+const savedState      = document.getElementById('savedState');
+const editForm        = document.getElementById('editForm');
+const savedUsername   = document.getElementById('savedUsername');
+
+function updateBadgeState(isEnabled) {
+  if (isEnabled) {
+    statusBadge.classList.add('active');
+    statusBadgeText.textContent = 'Auto-login On';
+  } else {
+    statusBadge.classList.remove('active');
+    statusBadgeText.textContent = 'Disabled';
+  }
+}
 
 function showSavedState(username) {
-  // Show first 3 chars + mask the rest
   const masked = username.length > 3
     ? username.slice(0, 3) + '•'.repeat(Math.min(username.length - 3, 6))
     : '•'.repeat(username.length);
@@ -27,9 +39,11 @@ function showEditForm() {
   editForm.classList.remove('hidden');
 }
 
-// Load saved credentials on open
+// Load saved credentials on popup opening
 chrome.storage.sync.get(['wifiUsername', 'wifiPassword', 'enabled'], (data) => {
-  enabledToggle.checked = data.enabled !== false;
+  const isEnabled = data.enabled !== false;
+  enabledToggle.checked = isEnabled;
+  updateBadgeState(isEnabled);
 
   if (data.wifiUsername && data.wifiPassword) {
     usernameInput.value = data.wifiUsername;
@@ -40,19 +54,35 @@ chrome.storage.sync.get(['wifiUsername', 'wifiPassword', 'enabled'], (data) => {
   }
 });
 
-// Edit button — reveal the form
-editBtn.addEventListener('click', () => {
+// Edit button handler
+editBtn?.addEventListener('click', () => {
   showEditForm();
   usernameInput.focus();
 });
 
-// Save credentials
+// Test Login on active tab handler
+testBtn?.addEventListener('click', () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]?.id) {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        files: ['content.js']
+      }).then(() => {
+        showStatus('Triggered auto-login!', 'ok');
+      }).catch(() => {
+        showStatus('Open the WiFi portal tab first', 'err');
+      });
+    }
+  });
+});
+
+// Save credentials handler
 saveBtn.addEventListener('click', () => {
   const username = usernameInput.value.trim();
   const password = passwordInput.value;
 
   if (!username || !password) {
-    showStatus('Please fill in both fields.', 'err');
+    showStatus('Please fill in both username and password.', 'err');
     return;
   }
 
@@ -61,17 +91,19 @@ saveBtn.addEventListener('click', () => {
     wifiPassword: password,
     enabled: enabledToggle.checked,
   }, () => {
-    showStatus('✓ Saved!', 'ok');
-    setTimeout(() => showSavedState(username), 800);
+    showStatus('✓ Saved credentials', 'ok');
+    setTimeout(() => showSavedState(username), 600);
   });
 });
 
-// Toggle enabled state
+// Enable/disable toggle handler
 enabledToggle.addEventListener('change', () => {
-  chrome.storage.sync.set({ enabled: enabledToggle.checked });
+  const isEnabled = enabledToggle.checked;
+  chrome.storage.sync.set({ enabled: isEnabled });
+  updateBadgeState(isEnabled);
 });
 
-// Show/hide password toggle
+// Password visibility toggle
 togglePass.addEventListener('click', () => {
   const isHidden = passwordInput.type === 'password';
   passwordInput.type = isHidden ? 'text' : 'password';
@@ -81,10 +113,10 @@ togglePass.addEventListener('click', () => {
 });
 
 function showStatus(msg, type) {
-  status.textContent = msg;
-  status.className = 'status ' + type;
+  statusMsg.textContent = msg;
+  statusMsg.className = 'status-msg ' + type;
   setTimeout(() => {
-    status.textContent = '';
-    status.className = 'status';
+    statusMsg.textContent = '';
+    statusMsg.className = 'status-msg';
   }, 3000);
 }
