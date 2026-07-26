@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "VIT-Connect",
+  "version": "1.0",
+  "description": "Automatically logs you into your VIT Vellore hostel captive portal WiFi",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://phc.prontonetworks.com/*",
+    "https://phc.prontonetworks.com/*",
+    "*://*.prontonetworks.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://phc.prontonetworks.com/*",
+        "http://phc.prontonetworks.com/*",
+        "*://*.prontonetworks.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
