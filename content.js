@@ -1,24 +1,102 @@
-// Hostel WiFi Auto-Login - ProntoNetworks & Captive Portal Content Script
+// VIT-Connect - Captive Portal Auto-Login Content Script
 
 (function () {
   'use strict';
 
-  // Prevent running twice on same page load
+  // Prevent duplicate execution on same page instance
   if (window.__wifiAutoLoginDone) return;
   window.__wifiAutoLoginDone = true;
 
   const TARGET_HOST = 'phc.prontonetworks.com';
 
-  // Selector fallbacks for username and password fields across portal versions
-  const USERNAME_SELECTORS = ['#userId', '#username', 'input[name="userId"]', 'input[name="username"]', 'input[name="user"]'];
-  const PASSWORD_SELECTORS = ['#password', '#pass', 'input[name="password"]', 'input[name="pass"]', 'input[type="password"]'];
+  const USERNAME_SELECTORS = [
+    '#userId',
+    '#username',
+    'input[name="userId"]',
+    'input[name="username"]',
+    'input[name="user"]'
+  ];
+
+  const PASSWORD_SELECTORS = [
+    '#password',
+    '#pass',
+    'input[name="password"]',
+    'input[name="pass"]',
+    'input[type="password"]'
+  ];
+
+  let hasClosed = false;
+
+  function log(msg) {
+    console.log('[VIT-Connect]', msg);
+  }
 
   function isTargetPage() {
     return window.location.hostname === TARGET_HOST || window.location.hostname.endsWith('.prontonetworks.com');
   }
 
-  function log(msg) {
-    console.log('[WiFi AutoLogin]', msg);
+  function closeTabImmediately() {
+    if (hasClosed) return;
+    hasClosed = true;
+    log('Connection success detected! Closing tab immediately...');
+    chrome.runtime.sendMessage({ action: 'closeTab' });
+    try { window.close(); } catch (_) {}
+  }
+
+  function isSuccessPage() {
+    const url = window.location.href.toLowerCase();
+    const bodyText = (document.body ? document.body.innerText : '') || '';
+    const lower = bodyText.toLowerCase();
+
+    // Check strong success phrases (instant trigger)
+    const strongSuccessPhrases = [
+      'access granted',
+      'successfully connected',
+      'connected successfully',
+      'you are now connected',
+      'login successful',
+      'authentication successful'
+    ];
+
+    for (const phrase of strongSuccessPhrases) {
+      if (lower.includes(phrase)) return true;
+    }
+
+    // Check secondary success states (when no password field is present on screen)
+    const hasPasswordField = !!document.querySelector('input[type="password"]');
+    if (!hasPasswordField) {
+      const secondarySuccessPhrases = [
+        'logged in',
+        'session started',
+        'remaining time',
+        'account status',
+        'welcome to pronto',
+        'logout',
+        'sign out',
+        'disconnect'
+      ];
+
+      for (const phrase of secondarySuccessPhrases) {
+        if (lower.includes(phrase)) return true;
+      }
+
+      // Check URL indicators
+      if (
+        url.includes('status') ||
+        url.includes('success') ||
+        url.includes('welcome') ||
+        url.includes('logged') ||
+        url.includes('logout')
+      ) {
+        return true;
+      }
+
+      // Check for standalone logout/disconnect buttons
+      const logoutBtn = findButtonByText('LOGOUT') || findButtonByText('SIGN OUT') || findButtonByText('DISCONNECT');
+      if (logoutBtn) return true;
+    }
+
+    return false;
   }
 
   function findElement(selectors) {
@@ -38,7 +116,7 @@
   }
 
   function findButtonByText(text) {
-    const btns = document.querySelectorAll('button[type="submit"], button, input[type="submit"], input[type="button"], a.btn, a.button');
+    const btns = document.querySelectorAll('button[type="submit"], button, input[type="submit"], input[type="button"], a.btn, a.button, a');
     for (const btn of btns) {
       const label = (btn.innerText || btn.value || '').trim().toUpperCase();
       if (label === text.toUpperCase() || label.includes(text.toUpperCase())) return btn;
@@ -47,13 +125,49 @@
   }
 
   function dismissOverlay() {
-    const okayBtn = findButtonByText('OKAY') || findButtonByText('ACCEPT') || findButtonByText('CONTINUE');
+    const okayBtn = findButtonByText('OKAY') || findButtonByText('ACCEPT') || findButtonByText('CONTINUE') || findButtonByText('AGREE');
     if (okayBtn) {
-      log('Dismissing overlay popup...');
+      log('Dismissing portal overlay...');
       okayBtn.click();
       return true;
     }
     return false;
+  }
+
+  function watchForSuccessAfterSubmit() {
+    log('Monitoring for success confirmation...');
+
+    // 1. Fast polling loop (every 50ms for up to 8s)
+    let checks = 0;
+    const maxChecks = 160; // 8 seconds total
+    const pollTimer = setInterval(() => {
+      checks++;
+      if (isSuccessPage()) {
+        clearInterval(pollTimer);
+        if (observer) observer.disconnect();
+        closeTabImmediately();
+      } else if (checks >= maxChecks) {
+        clearInterval(pollTimer);
+        if (observer) observer.disconnect();
+      }
+    }, 50);
+
+    // 2. DOM MutationObserver for instant trigger on dynamic DOM rewrite
+    const observer = new MutationObserver(() => {
+      if (isSuccessPage()) {
+        clearInterval(pollTimer);
+        observer.disconnect();
+        closeTabImmediately();
+      }
+    });
+
+    if (document.body || document.documentElement) {
+      observer.observe(document.body || document.documentElement, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+    }
   }
 
   function fillAndLogin(credentials) {
@@ -66,14 +180,17 @@
       return false;
     }
 
-    log('Filling in login credentials...');
+    log('Entering login credentials...');
     simulateInput(userField, username);
     simulateInput(passField, password);
 
     setTimeout(() => {
-      const loginBtn = findButtonByText('Login') || findButtonByText('Sign In') || findButtonByText('Connect');
+      // Start watching for success response before triggering submit
+      watchForSuccessAfterSubmit();
+
+      const loginBtn = findButtonByText('Login') || findButtonByText('Sign In') || findButtonByText('Connect') || findButtonByText('Submit');
       if (loginBtn) {
-        log('Clicking Login button...');
+        log('Clicking login button...');
         loginBtn.click();
       } else {
         const form = userField.closest('form');
@@ -82,7 +199,7 @@
           form.submit();
         }
       }
-    }, 400);
+    }, 250);
 
     return true;
   }
@@ -90,42 +207,38 @@
   function run(credentials) {
     if (!isTargetPage()) return;
 
-    log('Captive portal detected!');
-
-    // Check if we're on the success page
-    const bodyText = document.body?.innerText || '';
-    if (
-      bodyText.includes('Access Granted') ||
-      bodyText.includes('successfully connected') ||
-      bodyText.includes('Logged In') ||
-      bodyText.includes('You are now connected')
-    ) {
-      log('Success page detected - closing tab after brief delay');
-      setTimeout(() => {
-        chrome.runtime.sendMessage({ action: 'closeTab' });
-        try { window.close(); } catch (_) {}
-      }, 1200);
+    // If page is already on the success screen, close immediately with zero delay
+    if (isSuccessPage()) {
+      closeTabImmediately();
       return;
     }
 
     dismissOverlay();
 
-    // Attempt immediate form filling
+    // Attempt immediate credential fill
     if (fillAndLogin(credentials)) return;
 
-    // Retries with interval for dynamically loaded DOM elements (up to 5s)
+    // Retry loop for dynamically rendered portal forms
     let attempts = 0;
-    const maxAttempts = 10;
-    const interval = setInterval(() => {
+    const maxAttempts = 12;
+    const retryInterval = setInterval(() => {
       attempts++;
-      log(`Retrying field detection... (Attempt ${attempts}/${maxAttempts})`);
+
+      // Check if success page was reached in the meantime
+      if (isSuccessPage()) {
+        clearInterval(retryInterval);
+        closeTabImmediately();
+        return;
+      }
+
       dismissOverlay();
       if (fillAndLogin(credentials) || attempts >= maxAttempts) {
-        clearInterval(interval);
+        clearInterval(retryInterval);
       }
-    }, 500);
+    }, 300);
   }
 
+  // Load saved credentials
   chrome.storage.sync.get(['wifiUsername', 'wifiPassword', 'enabled'], (data) => {
     if (data.enabled === false) return;
 
