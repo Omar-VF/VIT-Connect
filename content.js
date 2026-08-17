@@ -57,7 +57,6 @@
     hasClosed = true;
     log('Login success detected! Closing tab immediately...');
     chrome.runtime.sendMessage({ action: 'closeTab' });
-    try { window.close(); } catch (_) {}
   }
 
   function isSuccessPage() {
