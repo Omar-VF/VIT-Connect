@@ -10,7 +10,7 @@ const enabledToggle   = document.getElementById('enabledToggle');
 const statusBadge     = document.getElementById('statusBadge');
 const statusBadgeText = document.getElementById('statusBadgeText');
 const editBtn         = document.getElementById('editBtn');
-const testBtn         = document.getElementById('testBtn');
+const githubBtn       = document.getElementById('githubBtn');
 const savedState      = document.getElementById('savedState');
 const editForm        = document.getElementById('editForm');
 const savedUsername   = document.getElementById('savedUsername');
@@ -60,20 +60,9 @@ editBtn?.addEventListener('click', () => {
   usernameInput.focus();
 });
 
-// Test Login on active tab handler
-testBtn?.addEventListener('click', () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.id) {
-      chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        files: ['content.js']
-      }).then(() => {
-        showStatus('Triggered auto-login!', 'ok');
-      }).catch(() => {
-        showStatus('Open the WiFi portal tab first', 'err');
-      });
-    }
-  });
+// GitHub repository button handler
+githubBtn?.addEventListener('click', () => {
+  chrome.tabs.create({ url: 'https://github.com/Omar-VF/VIT-Connect' });
 });
 
 // Save credentials handler
