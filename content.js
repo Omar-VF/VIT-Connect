@@ -35,21 +35,41 @@
     return window.location.hostname === TARGET_HOST || window.location.hostname.endsWith('.prontonetworks.com');
   }
 
+  function isLogoutPage() {
+    const url = window.location.href.toLowerCase();
+    const bodyText = (document.body ? document.body.innerText : '') || '';
+    const lower = bodyText.toLowerCase();
+
+    return (
+      url.includes('authlogout') ||
+      url.includes('/logout') ||
+      url.includes('logout?') ||
+      lower.includes('logged out') ||
+      lower.includes('successfully logged out') ||
+      lower.includes('you have logged out') ||
+      lower.includes('card value remaining') ||
+      lower.includes('bytes received')
+    );
+  }
+
   function closeTabImmediately() {
     if (hasClosed) return;
     hasClosed = true;
-    log('Connection success detected! Closing tab immediately...');
+    log('Login success detected! Closing tab immediately...');
     chrome.runtime.sendMessage({ action: 'closeTab' });
     try { window.close(); } catch (_) {}
   }
 
   function isSuccessPage() {
+    // Never treat logout pages as success
+    if (isLogoutPage()) return false;
+
     const url = window.location.href.toLowerCase();
     const bodyText = (document.body ? document.body.innerText : '') || '';
     const lower = bodyText.toLowerCase();
 
-    // Check strong success phrases (instant trigger)
-    const strongSuccessPhrases = [
+    // Positive login success keywords (instant trigger)
+    const loginSuccessPhrases = [
       'access granted',
       'successfully connected',
       'connected successfully',
@@ -58,42 +78,22 @@
       'authentication successful'
     ];
 
-    for (const phrase of strongSuccessPhrases) {
+    for (const phrase of loginSuccessPhrases) {
       if (lower.includes(phrase)) return true;
     }
 
-    // Check secondary success states (when no password field is present on screen)
+    // Secondary verification: only if no password field exists AND strictly not logged out
     const hasPasswordField = !!document.querySelector('input[type="password"]');
     if (!hasPasswordField) {
-      const secondarySuccessPhrases = [
-        'logged in',
-        'session started',
-        'remaining time',
-        'account status',
-        'welcome to pronto',
-        'logout',
-        'sign out',
-        'disconnect'
-      ];
-
-      for (const phrase of secondarySuccessPhrases) {
-        if (lower.includes(phrase)) return true;
-      }
-
-      // Check URL indicators
-      if (
-        url.includes('status') ||
-        url.includes('success') ||
-        url.includes('welcome') ||
-        url.includes('logged') ||
-        url.includes('logout')
-      ) {
+      if (lower.includes('logged in') && !lower.includes('logged out')) {
         return true;
       }
-
-      // Check for standalone logout/disconnect buttons
-      const logoutBtn = findButtonByText('LOGOUT') || findButtonByText('SIGN OUT') || findButtonByText('DISCONNECT');
-      if (logoutBtn) return true;
+      if (lower.includes('session started') || lower.includes('welcome to pronto networks')) {
+        return true;
+      }
+      if (url.includes('authstatus') || url.includes('/success')) {
+        return true;
+      }
     }
 
     return false;
@@ -146,7 +146,7 @@
         clearInterval(pollTimer);
         if (observer) observer.disconnect();
         closeTabImmediately();
-      } else if (checks >= maxChecks) {
+      } else if (checks >= maxChecks || isLogoutPage()) {
         clearInterval(pollTimer);
         if (observer) observer.disconnect();
       }
@@ -171,6 +171,9 @@
   }
 
   function fillAndLogin(credentials) {
+    // If user is logging out or on logout page, do not auto-fill or submit
+    if (isLogoutPage()) return false;
+
     const { username, password } = credentials;
 
     const userField = findElement(USERNAME_SELECTORS);
@@ -207,7 +210,13 @@
   function run(credentials) {
     if (!isTargetPage()) return;
 
-    // If page is already on the success screen, close immediately with zero delay
+    // If on a logout confirmation page, leave it alone
+    if (isLogoutPage()) {
+      log('Logout page detected — taking no action.');
+      return;
+    }
+
+    // If page is already on the success screen, close immediately
     if (isSuccessPage()) {
       closeTabImmediately();
       return;
@@ -224,7 +233,11 @@
     const retryInterval = setInterval(() => {
       attempts++;
 
-      // Check if success page was reached in the meantime
+      if (isLogoutPage()) {
+        clearInterval(retryInterval);
+        return;
+      }
+
       if (isSuccessPage()) {
         clearInterval(retryInterval);
         closeTabImmediately();
